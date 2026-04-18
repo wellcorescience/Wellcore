@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
-import { getAdminFromRequest } from "@/lib/adminAuth";
+
+// Helper to check admin session
+async function isAdmin() {
+  const session = await getServerSession(authOptions);
+  return session && (session.user as any)?.role === 'admin';
+}
 
 // GET /api/admin/products — list all products (admin)
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const admin = await getAdminFromRequest(req);
-    if (!admin) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -27,8 +33,7 @@ export async function GET(req: Request) {
 // POST /api/admin/products — create product
 export async function POST(req: Request) {
   try {
-    const admin = await getAdminFromRequest(req);
-    if (!admin) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

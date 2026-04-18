@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, ShoppingBag, Package, Users, Settings, LogOut, Layers, TrendingUp } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Package, Users, Settings, LogOut, Layers, TrendingUp, Tag } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
     { name: "Product Management", href: "/admin/products", icon: Package },
     { name: "Categories", href: "/admin/categories", icon: Layers },
+    { name: "Brands", href: "/admin/brands", icon: Tag },
     { name: "Customers", href: "/admin/customers", icon: Users },
     { name: "Deals Engine", href: "/admin/deals", icon: TrendingUp },
     { name: "Storefront", href: "/admin/storefront", icon: Settings },

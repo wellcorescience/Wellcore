@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Loader2, X, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Loader2, X, Image as ImageIcon, Tag } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdminBrands() {
@@ -24,7 +24,7 @@ export default function AdminBrands() {
     try {
       const res = await fetch("/api/admin/brands");
       const data = await res.json();
-      if (res.ok) setBrands(data.brands);
+      if (res.ok) setBrands(data.brands || []);
     } catch (error) {
       toast.error("Failed to fetch brand designations");
     } finally {
@@ -82,6 +82,23 @@ export default function AdminBrands() {
     }
   };
 
+  const handleDelete = async (id: string, brandName: string) => {
+    if (!confirm(`Confirm termination of brand "${brandName}"? This action is irreversible.`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/brands/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Brand designation terminated");
+        fetchBrands();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || "Deletion failed");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
@@ -102,6 +119,12 @@ export default function AdminBrands() {
           <div className="py-20 flex flex-col items-center justify-center gap-4">
              <Loader2 className="w-10 h-10 text-primary animate-spin" />
              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Syncing Designations...</p>
+          </div>
+        ) : brands.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+             <Tag className="w-16 h-16 text-stone-200" />
+             <p className="font-headline font-black uppercase text-on-surface-variant opacity-50 text-sm">No Brand Designations Found</p>
+             <p className="text-[10px] text-on-surface-variant/60 tracking-wide">Click "Add Brand" to initialize your first designation</p>
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -130,7 +153,11 @@ export default function AdminBrands() {
                      <span className="font-mono text-[10px] bg-surface-container-high px-2 py-1 rounded text-on-surface-variant">/{brand.slug}</span>
                   </td>
                   <td className="p-8 text-right">
-                    <button className="p-3 bg-surface-container text-on-surface-variant hover:bg-error/10 hover:text-error rounded-xl transition-all">
+                    <button 
+                      onClick={() => handleDelete(brand._id, brand.name)}
+                      className="p-3 bg-surface-container text-on-surface-variant hover:bg-error/10 hover:text-error rounded-xl transition-all"
+                      title="Delete Brand"
+                    >
                        <Trash2 className="w-4 h-4" />
                     </button>
                   </td>

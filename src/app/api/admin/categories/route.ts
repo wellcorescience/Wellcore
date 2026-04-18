@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
 import { Category } from "@/models/CategoryBrand";
-import { getAdminFromRequest } from "@/lib/adminAuth";
+
+// Helper to check admin session
+async function isAdmin() {
+  const session = await getServerSession(authOptions);
+  return session && (session.user as any)?.role === 'admin';
+}
 
 // POST /api/admin/categories — create new category
 export async function POST(req: Request) {
   try {
-    const admin = await getAdminFromRequest(req);
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     await dbConnect();
     const { name } = await req.json();
@@ -21,10 +29,11 @@ export async function POST(req: Request) {
 }
 
 // GET /api/admin/categories
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const admin = await getAdminFromRequest(req);
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    if (!(await isAdmin())) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     await dbConnect();
     const categories = await Category.find().sort({ name: 1 }).lean();

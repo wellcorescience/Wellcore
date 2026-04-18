@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
-import Order from "@/models/Order";
+import User from "@/models/User";
 
 // Helper to check admin session
 async function isAdmin() {
@@ -10,25 +10,20 @@ async function isAdmin() {
   return session && (session.user as any)?.role === 'admin';
 }
 
-// GET /api/admin/orders — list all orders
-export async function GET(req: Request) {
+// GET /api/admin/customers — list all customers
+export async function GET() {
   try {
     if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
-    const filter: any = {};
-    if (status) filter.orderStatus = status;
-
-    const orders = await Order.find(filter)
-      .populate("user", "name email")
+    const customers = await User.find({ role: "user" })
+      .select("name email image provider createdAt addresses")
       .sort({ createdAt: -1 })
       .lean();
 
-    return NextResponse.json({ orders });
+    return NextResponse.json({ customers });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

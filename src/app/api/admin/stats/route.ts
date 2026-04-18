@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import User from "@/models/User";
-import { getAdminFromRequest } from "@/lib/adminAuth";
+
+// Helper to check admin session
+async function isAdmin() {
+  const session = await getServerSession(authOptions);
+  return session && (session.user as any)?.role === 'admin';
+}
 
 // GET /api/admin/stats — dashboard stats
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const admin = await getAdminFromRequest(req);
-    if (!admin) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

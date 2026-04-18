@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Loader2, X, Layers } from "lucide-react";
+import { Plus, Trash2, Loader2, X, Layers } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AdminCategories() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -20,7 +19,7 @@ export default function AdminCategories() {
     try {
       const res = await fetch("/api/admin/categories");
       const data = await res.json();
-      if (res.ok) setCategories(data.categories);
+      if (res.ok) setCategories(data.categories || []);
     } catch (error) {
       toast.error("Failed to fetch protocol layers");
     } finally {
@@ -38,7 +37,7 @@ export default function AdminCategories() {
         body: JSON.stringify({ name }),
       });
       if (res.ok) {
-        toast.success("New Protocol Layer Initialized");
+        toast.success("New Classification Layer Initialized");
         setIsModalOpen(false);
         setName("");
         fetchCategories();
@@ -53,6 +52,23 @@ export default function AdminCategories() {
     }
   };
 
+  const handleDelete = async (id: string, categoryName: string) => {
+    if (!confirm(`Confirm termination of classification layer "${categoryName}"? This action is irreversible.`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Classification layer terminated");
+        fetchCategories();
+      } else {
+        const data = await res.json();
+        throw new Error(data.error || "Deletion failed");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
@@ -61,7 +77,7 @@ export default function AdminCategories() {
            <p className="text-on-surface-variant text-sm font-medium tracking-wide">Manage Science-Based Taxonomy</p>
         </div>
         <button 
-          onClick={() => { setName(""); setEditingCategory(null); setIsModalOpen(true); }}
+          onClick={() => { setName(""); setIsModalOpen(true); }}
           className="bg-primary text-black font-headline font-black uppercase text-xs tracking-[0.2em] py-4 px-8 rounded-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-xl shadow-primary/20"
         >
           <Plus className="w-5 h-5 stroke-[3]" /> Add Category
@@ -73,6 +89,12 @@ export default function AdminCategories() {
           <div className="py-20 flex flex-col items-center justify-center gap-4">
              <Loader2 className="w-10 h-10 text-primary animate-spin" />
              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Syncing Layers...</p>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+             <Layers className="w-16 h-16 text-stone-200" />
+             <p className="font-headline font-black uppercase text-on-surface-variant opacity-50 text-sm">No Classification Layers Found</p>
+             <p className="text-[10px] text-on-surface-variant/60 tracking-wide">Click "Add Category" to initialize your first layer</p>
           </div>
         ) : (
           <table className="w-full text-left border-collapse">
@@ -91,7 +113,11 @@ export default function AdminCategories() {
                      <span className="font-mono text-[10px] bg-surface-container-high px-2 py-1 rounded text-on-surface-variant">/{cat.slug}</span>
                   </td>
                   <td className="p-8 text-right">
-                    <button className="p-3 bg-surface-container text-on-surface-variant hover:bg-error/10 hover:text-error rounded-xl transition-all">
+                    <button 
+                      onClick={() => handleDelete(cat._id, cat.name)}
+                      className="p-3 bg-surface-container text-on-surface-variant hover:bg-error/10 hover:text-error rounded-xl transition-all"
+                      title="Delete Category"
+                    >
                        <Trash2 className="w-4 h-4" />
                     </button>
                   </td>

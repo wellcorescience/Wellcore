@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
-import Order from "@/models/Order";
+import { Category } from "@/models/CategoryBrand";
 
 // Helper to check admin session
 async function isAdmin() {
@@ -10,25 +10,25 @@ async function isAdmin() {
   return session && (session.user as any)?.role === 'admin';
 }
 
-// GET /api/admin/orders — list all orders
-export async function GET(req: Request) {
+// DELETE /api/admin/categories/[id]
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id } = await params;
     if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     await dbConnect();
-    const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
-    const filter: any = {};
-    if (status) filter.orderStatus = status;
+    const category = await Category.findByIdAndDelete(id);
 
-    const orders = await Order.find(filter)
-      .populate("user", "name email")
-      .sort({ createdAt: -1 })
-      .lean();
+    if (!category) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
 
-    return NextResponse.json({ orders });
+    return NextResponse.json({ success: true, message: "Category deleted" });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

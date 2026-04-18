@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth-config";
 import dbConnect from "@/lib/db";
 import Order from "@/models/Order";
-import { getAdminFromRequest } from "@/lib/adminAuth";
 import { createShiprocketOrder } from "@/lib/shiprocket";
+
+// Helper to check admin session
+async function isAdmin() {
+  const session = await getServerSession(authOptions);
+  return session && (session.user as any)?.role === 'admin';
+}
 
 // PUT /api/admin/orders/[id] — update order status, tracking
 export async function PUT(
@@ -11,8 +18,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const admin = await getAdminFromRequest(req);
-    if (!admin) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -63,8 +69,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const admin = await getAdminFromRequest(req);
-    if (!admin) {
+    if (!(await isAdmin())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
